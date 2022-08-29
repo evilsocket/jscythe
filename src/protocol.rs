@@ -30,6 +30,8 @@ pub(crate) struct EvalParams {
     pub await_promise: bool,
     #[serde(rename(serialize = "includeCommandLineAPI"))]
     pub include_commandline_api: bool,
+    #[serde(rename(serialize = "allowUnsafeEvalBlockedByCSP"))]
+    pub unsafe_eval: bool,
     pub expression: String,
 }
 
@@ -48,6 +50,7 @@ impl EvalRequest {
             params: EvalParams {
                 await_promise: true,
                 include_commandline_api: true,
+                unsafe_eval: true,
                 expression: expression.to_owned(),
             },
         }
