@@ -9,8 +9,28 @@ pub(crate) struct DebugManifest {
 }
 
 #[derive(Deserialize, Debug)]
+pub(crate) struct DomainCommandParam {
+    pub name: String,
+}
+
+#[derive(Deserialize, Debug)]
 pub(crate) struct DomainCommand {
     pub name: String,
+    pub parameters: Option<Vec<DomainCommandParam>>,
+}
+
+impl DomainCommand {
+    pub fn display(&self) -> String {
+        let args = match &self.parameters {
+            Some(params) => params
+                .iter()
+                .map(|p| p.name.to_owned())
+                .collect::<Vec<String>>()
+                .join(", "),
+            None => "".to_owned(),
+        };
+        format!(".{}({})", self.name, args)
+    }
 }
 
 #[derive(Deserialize, Debug)]

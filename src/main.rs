@@ -167,11 +167,12 @@ fn main() {
                 std::process::exit(1);
             }
         };
+
         println!("\navailable execution domains:");
         for domain in domains {
             println!("* {}", domain.domain);
             for command in domain.commands {
-                println!("  .{}", command.name);
+                println!("  {}", command.display());
             }
         }
         std::process::exit(0);
