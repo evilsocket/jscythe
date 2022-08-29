@@ -73,6 +73,8 @@ fn enable_inspection_port(pid: u32) -> Result<u16, Error> {
         )
         .map_err(|e| format!("could not send SIGUSR1 signal: {:?}", e))?;
 
+        println!("waiting 3 seconds for the debugger to start ...");
+
         // give the debugger some time to start
         std::thread::sleep(std::time::Duration::from_secs(3));
 
