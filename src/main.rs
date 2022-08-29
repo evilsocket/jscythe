@@ -1,6 +1,6 @@
 use clap::Parser;
-
 use netstat2::*;
+use std::io::{self, BufRead};
 use sysinfo::{PidExt, ProcessExt, SystemExt};
 use sysinfo::{ProcessRefreshKind, RefreshKind, System};
 use websocket::{ClientBuilder, Message};
@@ -116,6 +116,9 @@ struct Arguments {
     /// Fetch available objects and exit.
     #[clap(long, takes_value = false)]
     domains: bool,
+    /// Execute a custom request payload, use '-' to read from stdin.
+    #[clap(long)]
+    custom_payload: Option<String>,
 }
 
 fn main() {
@@ -155,8 +158,8 @@ fn main() {
         }
     };
 
-    // only show available domains
     if args.domains {
+        // only show available domains
         let domains = match protocol::get_domains(inspect_port) {
             Ok(url) => url,
             Err(e) => {
@@ -183,25 +186,43 @@ fn main() {
         }
     };
 
-    // 4. send Runtime.evaluate request -> profit
+    // 4. send payload request -> profit
     println!("connecting to {:?}", &debug_url);
 
     let mut builder = ClientBuilder::new(&debug_url).unwrap();
 
     let mut client = builder.connect_insecure().unwrap();
 
-    println!("connected, sending payload ...");
+    let payload = if let Some(custom) = args.custom_payload {
+        // execute custom payload
+        if custom == "-" {
+            // read payload from stdin
+            let stdin = io::stdin();
+            stdin
+                .lock()
+                .lines()
+                .into_iter()
+                .map(|r| r.unwrap())
+                .collect::<Vec<String>>()
+                .join("\n")
+        } else {
+            custom
+        }
+    } else {
+        // execute default Runtime.evaluate payload
+        let script = match args.code {
+            Some(code) => code,
+            None => std::fs::read_to_string(&args.script).unwrap(),
+        };
 
-    let script = match args.code {
-        Some(code) => code,
-        None => std::fs::read_to_string(&args.script).unwrap(),
+        let request = protocol::EvalRequest::new(&script);
+
+        serde_json::to_string(&request).unwrap()
     };
 
-    let request = protocol::EvalRequest::new(&script);
+    println!("connected, sending payload ...");
 
-    let raw = serde_json::to_string(&request).unwrap();
-
-    client.send_message(&Message::text(raw)).unwrap();
+    client.send_message(&Message::text(payload)).unwrap();
 
     println!("payload sent!");
 
