@@ -117,13 +117,13 @@ struct Arguments {
 }
 
 fn main() {
+    let args = Arguments::parse();
+
     println!(
         "{} v{}\n",
         env!("CARGO_PKG_NAME"),
         env!("CARGO_PKG_VERSION")
     );
-
-    let args = Arguments::parse();
 
     // 1. find the process
     let host_pid = match args.pid {
