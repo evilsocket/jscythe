@@ -216,7 +216,7 @@ fn main() {
             None => std::fs::read_to_string(&args.script).unwrap(),
         };
 
-        let request = protocol::EvalRequest::new(&script);
+        let request = protocol::requests::RuntimeEval::new(&script);
 
         serde_json::to_string(&request).unwrap()
     };
