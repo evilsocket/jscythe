@@ -10,7 +10,6 @@ repository = "https://github.com/evilsocket/sauron"
 
 [dependencies]
 clap = { version = "3.2.18", features = ["derive"] }
-colored = "2.0.0"
 lazy_static = "1.4.0"
 netstat2 = "0.9.1"
 nix = "0.25.0"
