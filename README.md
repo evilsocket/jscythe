@@ -2,7 +2,7 @@ jscythe abuses the node.js [inspector mechanism](https://nodejs.org/en/docs/guid
 
 ![vscode](https://i.imgur.com/MmUupgZ.jpg)
 
-Tested and working against Visual Studio Code, Slack, Discord, any Node.js application and more!
+Tested and working against Visual Studio Code, Discord, any Node.js application and more!
 
 ## How
 
