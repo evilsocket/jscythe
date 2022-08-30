@@ -239,6 +239,9 @@ fn main() {
 
     println!("reading events, press ctrl+c to exit ...\n");
 
+    // first read Runtime.eval result
+    println!("{:?}", client.recv_message().unwrap());
+
     let varialble_payload = args.poll_variable.map(|name| {
         serde_json::to_string(&protocol::requests::RuntimeEval::new(&format!(
             "JSON.stringify({})",
