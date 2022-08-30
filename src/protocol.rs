@@ -105,7 +105,7 @@ pub(crate) mod responses {
     pub(crate) struct Result {
         // #[serde(rename(deserialize = "type"))]
         // pub rtype: String,
-        pub value: String,
+        pub value: Option<String>,
     }
 
     #[derive(Deserialize)]

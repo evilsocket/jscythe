@@ -258,13 +258,13 @@ fn main() {
                 if let Some(ref poll_command) = args.poll_command {
                     println!("passing variable value to {} ...", poll_command);
                     Command::new(poll_command)
-                        .arg(&result.result.result.value)
+                        .arg(&result.result.result.value.unwrap_or("".to_owned()))
                         .spawn()
                         .unwrap()
                         .wait()
                         .unwrap();
                 } else {
-                    println!("{}", result.result.result.value);
+                    println!("{}", result.result.result.value.unwrap_or("".to_owned()));
                 }
             } else {
                 println!("got non text message: {:?}", resp);
