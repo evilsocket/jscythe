@@ -100,6 +100,24 @@ pub(crate) mod responses {
     pub(crate) struct Protocol {
         pub domains: Vec<Domain>,
     }
+
+    #[derive(Deserialize)]
+    pub(crate) struct Result {
+        // #[serde(rename(deserialize = "type"))]
+        // pub rtype: String,
+        pub value: String,
+    }
+
+    #[derive(Deserialize)]
+    pub(crate) struct ResultWrap {
+        pub result: Result,
+    }
+
+    #[derive(Deserialize)]
+    pub(crate) struct ResultMessage {
+        // pub id: usize,
+        pub result: ResultWrap,
+    }
 }
 
 pub(crate) fn get_domains(port: u16) -> Result<Vec<responses::Domain>, Error> {

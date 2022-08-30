@@ -1,8 +1,9 @@
+use std::io::{self, BufRead};
+use std::process::Command;
+
 use clap::Parser;
 use netstat2::*;
-use std::io::{self, BufRead};
-use sysinfo::{PidExt, ProcessExt, SystemExt};
-use sysinfo::{ProcessRefreshKind, RefreshKind, System};
+use sysinfo::{PidExt, ProcessExt, ProcessRefreshKind, RefreshKind, System, SystemExt};
 use websocket::{ClientBuilder, Message, OwnedMessage};
 
 mod protocol;
@@ -119,9 +120,15 @@ struct Arguments {
     /// Execute a custom request payload, use '-' to read from stdin.
     #[clap(long)]
     custom_payload: Option<String>,
+    /// Variable polling time in milliseconds.
+    #[clap(long, default_value_t = 1000)]
+    poll_interval: u64,
     /// Poll variable by name at regular intervals.
     #[clap(long)]
     poll_variable: Option<String>,
+    /// If specified along with --poll-variable, the variable value will be passed to this command
+    #[clap(long)]
+    poll_command: Option<String>,
 }
 
 fn main() {
@@ -246,12 +253,24 @@ fn main() {
 
             let resp = client.recv_message().unwrap();
             if let OwnedMessage::Text(data) = resp {
-                println!("{}", data);
+                let result: protocol::responses::ResultMessage =
+                    serde_json::from_str(&data).unwrap();
+                if let Some(ref poll_command) = args.poll_command {
+                    println!("passing variable value to {} ...", poll_command);
+                    Command::new(poll_command)
+                        .arg(&result.result.result.value)
+                        .spawn()
+                        .unwrap()
+                        .wait()
+                        .unwrap();
+                } else {
+                    println!("{}", result.result.result.value);
+                }
             } else {
                 println!("got non text message: {:?}", resp);
             }
 
-            std::thread::sleep(std::time::Duration::from_secs(1));
+            std::thread::sleep(std::time::Duration::from_millis(args.poll_interval));
         } else {
             println!("{:?}", client.recv_message().unwrap());
         }
