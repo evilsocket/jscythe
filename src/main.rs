@@ -3,7 +3,7 @@ use netstat2::*;
 use std::io::{self, BufRead};
 use sysinfo::{PidExt, ProcessExt, SystemExt};
 use sysinfo::{ProcessRefreshKind, RefreshKind, System};
-use websocket::{ClientBuilder, Message};
+use websocket::{ClientBuilder, Message, OwnedMessage};
 
 mod protocol;
 
@@ -119,6 +119,9 @@ struct Arguments {
     /// Execute a custom request payload, use '-' to read from stdin.
     #[clap(long)]
     custom_payload: Option<String>,
+    /// Poll variable by name at regular intervals.
+    #[clap(long)]
+    poll_variable: Option<String>,
 }
 
 fn main() {
@@ -228,7 +231,29 @@ fn main() {
     println!("payload sent!");
 
     println!("reading events, press ctrl+c to exit ...\n");
+
+    let varialble_payload = args.poll_variable.map(|name| {
+        serde_json::to_string(&protocol::requests::RuntimeEval::new(&format!(
+            "JSON.stringify({})",
+            name
+        )))
+        .unwrap()
+    });
+
     loop {
-        println!("{:?}", client.recv_message().unwrap());
+        if let Some(poll_payload) = &varialble_payload {
+            client.send_message(&Message::text(poll_payload)).unwrap();
+
+            let resp = client.recv_message().unwrap();
+            if let OwnedMessage::Text(data) = resp {
+                println!("{}", data);
+            } else {
+                println!("got non text message: {:?}", resp);
+            }
+
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        } else {
+            println!("{:?}", client.recv_message().unwrap());
+        }
     }
 }
