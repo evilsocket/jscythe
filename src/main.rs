@@ -71,7 +71,6 @@ fn enable_inspection_port(pid: u32) -> Result<u16, Error> {
         .map_err(|e| format!("could not find enumerate process open ports: {:?}", e))?;
 
     if let Some(port) = find_inspection_port(&ports_before) {
-        println!("inspection already enabled on port {}", port);
         return Ok(port);
     }
 
