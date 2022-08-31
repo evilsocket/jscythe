@@ -57,46 +57,48 @@ fn find_listening_ports_by_pid(pid: u32) -> Result<Vec<u16>, Error> {
     Ok(by_pid)
 }
 
+fn find_inspection_port(ports: &[u16]) -> Option<u16> {
+    for port in ports {
+        if protocol::get_debug_url(*port).is_ok() {
+            return Some(*port);
+        }
+    }
+    None
+}
+
 fn enable_inspection_port(pid: u32) -> Result<u16, Error> {
-    let port: u16;
     let ports_before = find_listening_ports_by_pid(pid)
         .map_err(|e| format!("could not find enumerate process open ports: {:?}", e))?;
 
-    if ports_before.len() == 1 {
-        // println!("inspection already enabled on port {}", ports_before[0]);
-        port = ports_before[0];
-    } else {
-        println!("sending SIGUSR1 to process {}", pid);
-
-        nix::sys::signal::kill(
-            nix::unistd::Pid::from_raw(pid as i32),
-            nix::sys::signal::Signal::SIGUSR1,
-        )
-        .map_err(|e| format!("could not send SIGUSR1 signal: {:?}", e))?;
-
-        println!("waiting 3 seconds for the debugger to start ...");
-
-        // give the debugger some time to start
-        std::thread::sleep(std::time::Duration::from_secs(3));
-
-        let ports_after = find_listening_ports_by_pid(pid)
-            .map_err(|e| format!("could not find enumerate process open ports: {:?}", e))?;
-
-        let new_ports: Vec<_> = ports_after
-            .iter()
-            .filter(|port| !ports_before.contains(port))
-            .collect();
-        if new_ports.len() == 1 {
-            port = *new_ports[0];
-        } else {
-            return Err(format!(
-                "could not infer inspection port, before={:?} after={:?}",
-                ports_before, ports_after
-            ));
-        }
+    if let Some(port) = find_inspection_port(&ports_before) {
+        println!("inspection already enabled on port {}", port);
+        return Ok(port);
     }
 
-    Ok(port)
+    println!("sending SIGUSR1 to process {}", pid);
+
+    nix::sys::signal::kill(
+        nix::unistd::Pid::from_raw(pid as i32),
+        nix::sys::signal::Signal::SIGUSR1,
+    )
+    .map_err(|e| format!("could not send SIGUSR1 signal: {:?}", e))?;
+
+    println!("waiting 3 seconds for the debugger to start ...");
+
+    // give the debugger some time to start
+    std::thread::sleep(std::time::Duration::from_secs(3));
+
+    let ports_after = find_listening_ports_by_pid(pid)
+        .map_err(|e| format!("could not find enumerate process open ports: {:?}", e))?;
+
+    if let Some(port) = find_inspection_port(&ports_after) {
+        return Ok(port);
+    }
+
+    Err(format!(
+        "could not infer inspection port, before={:?} after={:?}",
+        ports_before, ports_after
+    ))
 }
 
 #[derive(Parser, Default, Debug, Clone)]
