@@ -250,6 +250,8 @@ fn main() {
         .unwrap()
     });
 
+    println!("");
+
     loop {
         if let Some(poll_payload) = &varialble_payload {
             client.send_message(&Message::text(poll_payload)).unwrap();
@@ -259,7 +261,7 @@ fn main() {
                 let result: protocol::responses::ResultMessage =
                     serde_json::from_str(&data).unwrap();
                 if let Some(ref poll_command) = args.poll_command {
-                    println!("passing variable value to {} ...", poll_command);
+                    // println!("passing variable value to {} ...", poll_command);
                     Command::new(poll_command)
                         .arg(&result.result.result.value.unwrap_or("".to_owned()))
                         .spawn()
