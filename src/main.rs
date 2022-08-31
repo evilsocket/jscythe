@@ -1,5 +1,5 @@
-use std::io::{self, BufRead};
-use std::process::Command;
+use std::io::{self, BufRead, Write};
+use std::process::{Command, Stdio};
 
 use clap::Parser;
 use netstat2::*;
@@ -126,7 +126,7 @@ struct Arguments {
     /// Poll variable by name at regular intervals.
     #[clap(long)]
     poll_variable: Option<String>,
-    /// If specified along with --poll-variable, the variable value will be passed to this command
+    /// If specified along with --poll-variable, this command will be executed and variable values passed to its standard input.
     #[clap(long)]
     poll_command: Option<String>,
 }
@@ -237,11 +237,6 @@ fn main() {
 
     println!("payload sent!");
 
-    println!("reading events, press ctrl+c to exit ...\n");
-
-    // first read Runtime.eval result
-    println!("{:?}", client.recv_message().unwrap());
-
     let varialble_payload = args.poll_variable.map(|name| {
         serde_json::to_string(&protocol::requests::RuntimeEval::new(&format!(
             "JSON.stringify({})",
@@ -250,7 +245,19 @@ fn main() {
         .unwrap()
     });
 
-    println!("");
+    let mut poll_process = match args.poll_command {
+        Some(cmd) => {
+            println!("starting process '{}'", cmd);
+            Some(Command::new(cmd).stdin(Stdio::piped()).spawn().unwrap())
+        }
+        None => None,
+    };
+
+    println!("reading events, press ctrl+c to exit ...\n");
+
+    // first read Runtime.eval result
+    println!("{:?}", client.recv_message().unwrap());
+    println!();
 
     loop {
         if let Some(poll_payload) = &varialble_payload {
@@ -260,16 +267,18 @@ fn main() {
             if let OwnedMessage::Text(data) = resp {
                 let result: protocol::responses::ResultMessage =
                     serde_json::from_str(&data).unwrap();
-                if let Some(ref poll_command) = args.poll_command {
-                    // println!("passing variable value to {} ...", poll_command);
-                    Command::new(poll_command)
-                        .arg(&result.result.result.value.unwrap_or("".to_owned()))
-                        .spawn()
+
+                let res_value = result.result.result.value.unwrap_or_else(|| "".to_owned());
+
+                if let Some(ref mut child) = poll_process {
+                    child
+                        .stdin
+                        .as_mut()
                         .unwrap()
-                        .wait()
+                        .write_all(format!("{}\n", &res_value).as_bytes())
                         .unwrap();
                 } else {
-                    println!("{}", result.result.result.value.unwrap_or("".to_owned()));
+                    println!("{}", &res_value);
                 }
             } else {
                 println!("got non text message: {:?}", resp);
