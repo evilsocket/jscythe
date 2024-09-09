@@ -24,13 +24,13 @@ cargo build --release
 Target a specific process and execute a basic expression:
 
 ```sh
-./target/debug/jscythe --pid 666 --code "5 - 3 + 2"
+./target/release/jscythe --pid 666 --code "5 - 3 + 2"
 ```
 
 Execute code from a file:
 
 ```sh
-./target/debug/jscythe --pid 666 --script example_script.js
+./target/release/jscythe --pid 666 --script example_script.js
 ```
 
 The `example_script.js` can require any node module and execute any code, like:
@@ -42,7 +42,7 @@ require('child_process').spawnSync('/System/Applications/Calculator.app/Contents
 Search process by expression:
 
 ```sh
-./target/debug/jscythe --search extensionHost --script example_script.js
+./target/release/jscythe --search extensionHost --script example_script.js
 ```
 
 ## Other options
